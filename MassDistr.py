@@ -1,20 +1,16 @@
 """""""""""""""""""""""""""""""""
-This is the code I've written for a single mass at (0,0).
-Unfortunately the function PecVel turns the peculiar velocity
-into a vector of constants.
-I suspect this is because I'm iterating over
-position and the smoothing function simultaneously, but I'm not sure why
-this would be a problem. I've reduced the number points
-on the x and y axis, to simplify the problem a bit
-- meshgrid was giving me a bit of stress, but I will be able to
-modify the code once this other problem is sorted.
-
 Tyler Philp
 University of Queensland
 43946561
 Honours Project
 """""""""""""""""""""""""""""""""""
-
+"""""""""""""""""""""""""""""""""""
+Notes:
+Single mass at (0,0). Problem with the positive quadrant
+Vectors not being measured correctly - wrong direction
+Positive radial distance and positive angle - but want
+a negative in both directions
+"""""""""""""""""""""""""""""""""""
 
 
 
@@ -26,39 +22,53 @@ import math
 
 #coordinate system assuming mass is at origin
 
-xv = ([-7000,-5000,-3000,-2000,2000,3000,5000,7000])
-yv = ([-7000,-5000,-3000,-2000,2000,3000,5000,7000])
+x = [-2000,2000,-2000,2000,-5000,5000,-5000,5000,-1000,-1000,-3000,-3000,-2500,0,3000,1000,-6000,6000,-3000,-5500]
+y = [-2000,2000,2000,-2000,-5000,5000,5000,-5000,-1000,1000,-3000,3000,-2500,1000,2000,5000,-6000,-3000,-5000,0]
 
 #xv,yv = np.meshgrid(xv,yv)
 
 #biasing factor and constants
-Omega = 0.1
+Omega = 0.7
 f = Omega**0.55;
 b = 1
-rho = 20
+rho = 1.8*10**(-100) 
 i = 0
-n = len(xv)
+n = len(x)
 #beta = f/b
-beta = 1
+beta = 0.5
+pi = math.pi
 #Convert to spherical
 r = np.array([])
-for i in range(n):
-    c = (xv[i]**2 + yv[i]**2)**(1/2)
-    r = np.append(r,c)
+for i in range(len(x)):
+    radial = -(x[i]**2+y[i]**2)**(1/2)
+    r = np.append(r, radial)
+
     i = i+1
-#print(r)
+print(r)
 
 theta = np.array([])
-for i in range(n):
-    angle = math.atan(yv[i]/xv[i]);
-    theta = np.append(theta, angle);
-    i = i+1
-#print(theta)
+for i in range(len(x)):
+    if x[i]>0 and y[i]>=0:
+        angle = math.atan(y[i]/x[i])
+        
+    elif x[i]>=0 and y[i]<0:
+        angle = 3*pi/2-math.atan(x[i]/y[i])
+        
+    elif x[i]<=0 and y[i]>0:
+        angle = pi/2 - math.atan(x[i]/y[i])
 
+    else:
+        angle = pi + math.atan(y[i]/x[i])
+        
+    theta = np.append(theta, angle)
+    i = i+1
+
+    
+#Constants - distance to the object ro, density smoothing radius - rs, weight - k
 ro = 2500
 rs = 5000
 
-k = 1
+k = np.ones(n)
 #Smoothing function with radius and peculiar velocity
 #Define the functions for the peculiar velocity
 def SmFun(R):
@@ -72,22 +82,23 @@ def SmFun(R):
         i = i+1
     return[SmFun]
 
+    
 def Pec(SmFun, R):
     PecVel = np.array([])
     for i in range(n):
-        PV = beta*((1/(4*3.14*rho))*(SmFun[i]*k*((R[i]-ro)/(R[i]-ro)**3))+ro/3)
+        PV = beta*((1/(4*math.pi*rho))*(SmFun[i]*k[i]*((R[i]-ro)/(abs(R[i]-ro)**3)))+ro/3)
+        print(PV)
         PecVel = np.append(PecVel, PV)
         i = i+1
     return[PecVel]
 
 
-print(r)
+
 Smooth = SmFun(r)
 Smooth = np.concatenate(Smooth)
-print(Smooth)
-u = Pec(Smooth, r)
+
+u = Pec(Smooth,r)
 u = np.concatenate(u)
-print(u)
 
 
 #Components in x and y direction for the peculiar velocity
@@ -99,9 +110,10 @@ for i in range(n):
     ux = np.append(ux,ux1)
     uy = np.append(uy,uy1)
     i = i+1
-print(ux,uy)
+
 
 #Plotting the vector field
-plt.quiver(xv,yv,ux,uy)
-
+plt.quiver(x,y,ux,uy)
+axes = plt.gca()
+axes.set_aspect(1)
 plt.show()
