@@ -6,10 +6,9 @@ Honours Project
 """""""""""""""""""""""""""""""""""
 """""""""""""""""""""""""""""""""""
 Notes:
-Single mass at (0,0). Problem with the positive quadrant
-Vectors not being measured correctly - wrong direction
-Positive radial distance and positive angle - but want
-a negative in both directions
+Single mass at (0,0) - now works.
+No summation over mass
+Need to modify for multiple masses
 """""""""""""""""""""""""""""""""""
 
 
