@@ -16,7 +16,6 @@ Need to modify for multiple masses
 
 import numpy as np
 import matplotlib.pyplot as plt
-import plotly.figure_factory as ff
 import math
 
 #coordinate system assuming mass is at origin
