@@ -4,114 +4,62 @@ University of Queensland
 43946561
 Honours Project
 """""""""""""""""""""""""""""""""""
-"""""""""""""""""""""""""""""""""""
-Notes:
-Single mass at (0,0) - now works.
-No summation over mass
-Need to modify for multiple masses
-"""""""""""""""""""""""""""""""""""
-
-
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-#coordinate system assuming mass is at origin
+#Vectors
+#Mass locations
+k = 1
 
-x = [-2000,2000,-2000,2000,-5000,5000,-5000,5000,-1000,-1000,-3000,-3000,-2500,0,3000,1000,-6000,6000,-3000,-5500]
-y = [-2000,2000,2000,-2000,-5000,5000,5000,-5000,-1000,1000,-3000,3000,-2500,1000,2000,5000,-6000,-3000,-5000,0]
-
-#xv,yv = np.meshgrid(xv,yv)
+x,y = np.meshgrid(np.arange(-500,500,100), np.arange(-500,500,100))
 
 #biasing factor and constants
 Omega = 0.7
 f = Omega**0.55;
 b = 1
-rho = 1.8*10**(-100) 
-i = 0
-n = len(x)
+rho = 1.8*10**(-15) 
 #beta = f/b
 beta = 0.5
 pi = math.pi
+
 #Convert to spherical
-r = np.array([])
-for i in range(len(x)):
-    radial = -(x[i]**2+y[i]**2)**(1/2)
-    r = np.append(r, radial)
 
-    i = i+1
-print(r)
+r = (x**2+y**2)**(1/2)
+print(np.shape(r))
 
-theta = np.array([])
-for i in range(len(x)):
-    if x[i]>0 and y[i]>=0:
-        angle = math.atan(y[i]/x[i])
-        
-    elif x[i]>=0 and y[i]<0:
-        angle = 3*pi/2-math.atan(x[i]/y[i])
-        
-    elif x[i]<=0 and y[i]>0:
-        angle = pi/2 - math.atan(x[i]/y[i])
-
-    else:
-        angle = pi + math.atan(y[i]/x[i])
-        
-    theta = np.append(theta, angle)
-    i = i+1
-
-    
-#Constants - distance to the object ro, density smoothing radius - rs, weight - k
-ro = 2500
+ro = -5000
 rs = 5000
 
-k = np.ones(n)
-#Smoothing function with radius and peculiar velocity
-#Define the functions for the peculiar velocity
-def SmFun(R):
-    SmFun = np.array([])
-    for i in range(n):
-        if abs(R[i]-ro)<rs:
-            W = abs(R[i]-ro)**3/rs**3
-        else:
-            W = 1
-        SmFun = np.append(SmFun, W)
-        i = i+1
+def SmthFun(R):
+    if abs(R-ro)<rs:
+        SmFun = abs(R-ro)**3/rs**3
+    else:
+        SmFun = 1
+   # print(SmFun)
     return[SmFun]
 
-    
 def Pec(SmFun, R):
-    PecVel = np.array([])
-    for i in range(n):
-        PV = beta*((1/(4*math.pi*rho))*(SmFun[i]*k[i]*((R[i]-ro)/(abs(R[i]-ro)**3)))+ro/3)
-        print(PV)
-        PecVel = np.append(PecVel, PV)
-        i = i+1
+    PecVel = beta*((1/(4*math.pi*rho))*(SmFun*k*((R-ro)/(abs(R-ro)**3)))+ro/3)
+    #print(PecVel)
     return[PecVel]
 
+Smooth = np.array([])
+Peculiar = np.array([])
 
+for i in range(x.shape[0]):
+    for j in range(x.shape[1]):
+        Sm = SmthFun(r[i,j])
+        Smooth = np.append(Smooth, Sm)
 
-Smooth = SmFun(r)
-Smooth = np.concatenate(Smooth)
-
-u = Pec(Smooth,r)
-u = np.concatenate(u)
-
-
-#Components in x and y direction for the peculiar velocity
-ux = np.array([])
-uy = np.array([])
-for i in range(n):
-    ux1 = u[i]*np.cos(theta[i])
-    uy1 = u[i]*np.sin(theta[i])
-    ux = np.append(ux,ux1)
-    uy = np.append(uy,uy1)
-    i = i+1
-
-
-#Plotting the vector field
-plt.quiver(x,y,ux,uy)
+        PecVel = Pec(Smooth[i], r[i,j])
+        Peculiar = np.append(Peculiar, PecVel)
+        #print(Smooth)
+Peculiar = np.reshape(Peculiar, np.shape(r))
+print(np.shape(Peculiar))
+#Quiver needs to have scalars
+plt.quiver(x,y,Peculiar)
 axes = plt.gca()
 axes.set_aspect(1)
+plt.axis([-200,200,-200,200])
 plt.show()
