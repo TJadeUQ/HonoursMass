@@ -3,6 +3,13 @@ Tyler Philp
 University of Queensland
 43946561
 Honours Project
+
+Notes: So instead of creating four masses, this code is generating 4 vectors per point
+Need to seperate the idea of ri and r
+The summation term is also complicating things
+Want to get to the point where I can have a field of r then input some ri and wi
+to give a uniqie field - might be worthwhile to think about this in reverse
+Start with the r field of uniform vectors then add the masses
 """""""""""""""""""""""""""""""""
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,6 +38,7 @@ for i in range(len(r)):
     angle = math.acos(x[i]/r[i])
     theta = np.append(theta,angle)
     i = i+1
+print(np.shape(theta))
 #x = 20
 #y = 2000
 #r = ([(x**2+y**2)**(1/2)])
@@ -68,13 +76,16 @@ for i in range(len(r)):
     Peculiar = PecVel(Sumterm, k, r[i], ri)
     ThankyaJesus = np.append(ThankyaJesus, Peculiar)
     i = i+1
+print(np.shape(ThankyaJesus))
+ThankyaJesus = ThankyaJesus.reshape(4,100)
+print(np.shape(ThankyaJesus))
 #Now need x and y components of the peculiar velocities
 #Since we're in the positive quadrant, can just use cos and sin?
 Pecx = np.array([])
 Pecy = np.array([])
 for i in range(len(ThankyaJesus)):
-    pecx = ThankyaJesus[i]*math.cos(theta[i])
-    pecy = ThankyaJesus[i]*math.sin(theta[i])
+    pecx = ThankyaJesus[i]*np.cos(theta[i])
+    pecy = ThankyaJesus[i]*np.sin(theta[i])
     Pecx = np.append(Pecx, pecx)
     Pecy = np.append(Pecy, pecy)
     i = i+1
