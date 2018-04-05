@@ -20,7 +20,7 @@ print(r_ishape)
 
 #The r vectors - eventually want a meshgrid? - or just arbitary vectors?
 #Leaving them as vectors makes life a lot easier
-r = np.array([[0,0],[1,2],[10,8],[8,8],[3,4]])
+r = np.array([[0,0],[1,5],[1,2],[10,8],[8,8],[3,4],[5,5]])
 rshape = np.shape(r)
 print(rshape[0])
 
@@ -44,7 +44,7 @@ print(Smooth)
 output = np.array([])
 for i in range(len(r_i)):
     for j in range(len(r)):
-        R = Smooth[i]*w_i[i]*(r_i[i]-r[j])
+        R = Smooth[i]*w_i[i]*((r_i[i]-r[j])/(la.norm(r_i[i]-r[j])**3))+r[j]/3
         output = np.append(output, R)
 output = output.reshape((rshape[0],r_ishape[0],rshape[1]))
 print(output)
