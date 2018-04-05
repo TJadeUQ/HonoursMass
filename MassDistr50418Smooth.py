@@ -3,10 +3,6 @@ Tyler Philp
 University of Queensland
 43946561
 Honours Project
-
-Notes: New problems are coming down to how to define r
-How to get python to take in vectors to produce a vector
-The definition of the coordinate system is the problem at this point
 """""""""""""""""""""""""""""""""
 import numpy as np
 import matplotlib.pyplot as plt
