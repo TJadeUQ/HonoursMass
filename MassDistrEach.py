@@ -17,20 +17,22 @@ import matplotlib.colors
 import math
 #Staying in the positive quadrant
 #Location of the masses
-mr = ((10,20),(30,10))
-k = ([10000, 20000, 30000, 40000])
+mr = ([100,250],[300,10])
+k = ([10000, 20000])
+
 #Distance to the masses ri
 ri = np.array([])
 for i in range(len(mr[0])):
-    for j in range(len(mr[1])):
-        rad = ((mr[0][i])**2+(mr[j][1])**2)**(1/2)
-        ri = np.append(ri,rad)
-
+    print(mr[0][i])
+    rad = ((mr[0][i])**2+(mr[1][i])**2)**(1/2)
+    ri = np.append(ri,rad)
+print(ri)
 #Gives 4 radii but that's fine for now
 
-#Array of distances 
+#Array of distances and convert to polar 
 x,y = np.meshgrid(np.arange(1,1000,100), np.arange(1,1000,100))
 r = ((x**2+y**2)**(1/2)).reshape(len(x)**2)
+print(r)
 x = x.reshape(100)
 y = y.reshape(100)
 theta = np.array([])
@@ -38,7 +40,7 @@ for i in range(len(r)):
     angle = math.acos(x[i]/r[i])
     theta = np.append(theta,angle)
     i = i+1
-print(np.shape(theta))
+print((theta))
 #x = 20
 #y = 2000
 #r = ([(x**2+y**2)**(1/2)])
@@ -70,22 +72,24 @@ def PecVel(Sum, w, R, Ri):
         i = i+1
     return(PV)
 
-ThankyaJesus = np.array([])
+Final = np.array([])
 for i in range(len(r)):
     Sumterm = Sum(ri,r[i],k)
     Peculiar = PecVel(Sumterm, k, r[i], ri)
-    ThankyaJesus = np.append(ThankyaJesus, Peculiar)
+    Final = np.append(Final, Peculiar)
     i = i+1
-print(np.shape(ThankyaJesus))
-ThankyaJesus = ThankyaJesus.reshape(4,100)
-print(np.shape(ThankyaJesus))
+print((Final))
+
 #Now need x and y components of the peculiar velocities
 #Since we're in the positive quadrant, can just use cos and sin?
+print(np.shape(Final))
+print(np.shape(theta))
+
 Pecx = np.array([])
 Pecy = np.array([])
-for i in range(len(ThankyaJesus)):
-    pecx = ThankyaJesus[i]*np.cos(theta[i])
-    pecy = ThankyaJesus[i]*np.sin(theta[i])
+for i in range(len(theta)):
+    pecx = Final[i]*np.cos(theta[i])
+    pecy = Final[i]*np.sin(theta[i])
     Pecx = np.append(Pecx, pecx)
     Pecy = np.append(Pecy, pecy)
     i = i+1
