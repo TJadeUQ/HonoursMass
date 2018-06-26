@@ -22,11 +22,8 @@ vz = df.vz
 vr = df.vr
 log_m = df.log_m
 d_c = df.d_c
-Mass_gal = df.MassM_0
-#define each of the masses
-w_i = np.array([6.17*10**11, 1.99*10**12,2.43*10**11])
-z_i = np.array([1.408,1.4158,1.4031])
-
+Mass_gal = np.array([df.MassM_0])
+print(Mass_gal.shape)
 
 #Convert redshift to comoving
 
@@ -127,7 +124,7 @@ for i in z_red:
     R = Comoving(0,i)
     r_i = np.append(r_i, R[0])
     error = np.append(error, R[1])
-print('Comoving distance',r_i,'Mpc/h') 
+print('Comoving distance',r_i.shape,'Mpc/h') 
 
 
 #Difference between radial and actual comoving distance
@@ -144,8 +141,8 @@ print(diff)
 Smooth = SmthFunc(r_i, r_i[0], min(r_i)/2)
 print('Smooth',Smooth)
 Pray = Three_r(r_i,r_i[0])
-print('Cubed term',Pray)
-Vel = Velocity(Smooth, Pray, w_i, r_i[0], rho, 0.5)
+print('Cubed term',Pray.shape)
+Vel = Velocity(Smooth, Pray, Mass_gal, r_i[0], rho, 0.5)
 print('Velocity',Vel, 'MpcH_0/h', 'Assuming H_0 = 70km/s and h = 0.7, the velocity becomes', 10*Vel,'km/s')
 
 #Compare the error
