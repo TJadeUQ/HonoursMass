@@ -35,7 +35,7 @@ log_m = df.log_m
 d_c = df.d_c
 ra = df.ra
 Mass_gal = df.MassM_0
-#print(len(z_red))
+
 #Constants
 c = 3*10**5 #km/s
 H_0 = 70 #km/s/Mpc
@@ -50,6 +50,12 @@ L_l0 = 1
 
 #Create array?
 data_array = np.array([z_red,Mass_gal])
+"""
+data_dict = {}
+for i,j in zip(z_red, Mass_gal):
+    data_dict[i] = [j]
+print(data_dict)
+"""
 #print(data_array[:,0])
 
 
@@ -65,7 +71,7 @@ def Comoving(z_0,z_1):
     chi_z = lambda z: (c/H_0)*((L_k0 *(1+z)**2 + L_m0*(1+z)**3 + L_r0 * (1+z)**4 + L_l0))**(-1/2)
 
     Comov = quad(chi_z, z_0, z_1)
-    print(Comov)
+    #print(Comov)
     return(Comov)
 
 
@@ -149,16 +155,61 @@ plt.show()
 #########################################
 #Density of each bin
 #########################################
-"""
+
 #Need to find the mass in each bin
 data_dict = {}
 for i,z in zip(Mass_gal,z_red):
     data_dict[z] = [i]        
-#Do I even need to do this?????????????       
-keys_1 = (Bins[0],Bins[1])
-d1 = {k: data_dict[k] for k in keys_1}
-print(d1)
-"""
+
+
+def Mass_array(z_1, z_2, dictionary):
+    d = np.array([])
+    
+    for key in dictionary:
+        if z_1 < key <= z_2:
+            L = dictionary[key]
+            d = np.append(d, L)
+    return(d)
+
+
+d1 = sum(Mass_array(Bins[0], Bins[1], data_dict))
+d2 = sum(Mass_array(Bins[1], Bins[2], data_dict))
+d3 = sum(Mass_array(Bins[2], Bins[3], data_dict))
+d4 = sum(Mass_array(Bins[3], Bins[4], data_dict))
+d5 = sum(Mass_array(Bins[4], Bins[5], data_dict))
+d6 = sum(Mass_array(Bins[5], Bins[6], data_dict))
+d7 = sum(Mass_array(Bins[6], Bins[7], data_dict))
+d8 = sum(Mass_array(Bins[7], Bins[8], data_dict))
+
+M = np.array([d1,d2,d3,d4,d5,d6,d7,d8])
+
+#Density
+
+Volume = np.array([])
+
+for i in range(len(Bins)-1):
+    V = Vol(Bins[i], Bins[i+1])
+    Volume = np.append(Volume, V)
+    
+
+rho = np.array([])
+for L, A in zip(Volume, M):
+    den = A/L
+    rho = np.append(rho, den)
+print('RHO', rho)
+
+#Overdensity
+Total_Mass = sum(Mass_array(Bins[0], Bins[8], data_dict))
+Total_Vol = Vol(Bins[0], Bins[8])
+Total_Den = Total_Mass/Total_Vol
+print('Tota',Total_Den)
+
+Over_Den = np.array([])
+for i in range(len(rho)):
+    O = rho[i] - Total_Den
+    Over_Den = np.append(Over_Den, O)
+print('OVER',Over_Den)
+
 #########################################
 #FFT!
 #########################################
@@ -171,60 +222,62 @@ def Gaussian(x,sigma, mu):
 def variance(X,mu,N):
     diff = np.array([])
     for i in X:
-        Summa = abs(i-mu)
+        Summa = (i-mu)
         diff = np.append(diff, Summa)
-
-    Sigma2 = (sum(diff)**2)/N
+    diff2 = np.array([])
+    for j in diff:
+        diff2 = np.append(diff2, j**2)
+    Sigma2 = sum(diff2)/N
     
     return(Sigma2)
 
 #Breakup data into bins and multiply by gaussian
 x = data_array[0,:]
 
-s= variance(x, np.mean(x), len(x))**(1/2)
+s= (variance(x, np.mean(x), len(x)))**(1/2)
+print('Variance', s)
 
 
 F = np.array([])
 G = np.array([])
-
 for i in x:
     if Bins[0]<i<Bins[1]:
-        value = red_bins[0]
+        value = Over_Den[0]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[0], bin_edges[1]]))
         G = np.append(G, Ga)
     elif Bins[1]<i<Bins[2]:
-        value = red_bins[1]
+        value = Over_Den[1]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[1], bin_edges[2]]))
         G = np.append(G, Ga)
     elif Bins[2]<i<Bins[3]:
-        value = red_bins[2]
+        value = Over_Den[2]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[2], bin_edges[3]]))
         G = np.append(G, Ga)
     elif Bins[3]<i<Bins[4]:
-        value = red_bins[3]
+        value = Over_Den[3]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[3], bin_edges[4]]))
         G = np.append(G, Ga)
     elif Bins[4]<i<Bins[5]:
-        value = red_bins[4]
+        value = Over_Den[4]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[4], bin_edges[5]]))
         G = np.append(G, Ga)
     elif Bins[5]<i<Bins[6]:
-        value = red_bins[5]
+        value = Over_Den[5]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[5], bin_edges[6]]))
         G = np.append(G, Ga)
     elif Bins[6]<i<Bins[7]:
-        value = red_bins[6]
+        value = Over_Den[6]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[6], bin_edges[7]]))
         G = np.append(G, Ga)
     elif Bins[7]<i<Bins[8]:
-        value = red_bins[7]
+        value = Over_Den[7]
         F = np.append(F, value)
         Ga = Gaussian(i, s, np.mean([bin_edges[7], bin_edges[8]]))
         G = np.append(G, Ga)
@@ -242,9 +295,8 @@ for i,j in zip(G,F):
     H = np.append(H,h)
 
 
-#Fourier transform
+#Fourier transform of Gaussian and overdensity - produce delta_m
 H_fft = np.fft.fft(H)
-
 
 
 #Fourier and real
@@ -254,12 +306,41 @@ plt.plot(x,H)
 #plt.plot(x,H_ifft)
 plt.xlabel('Redshift')
 #plt.ylabel('Fourier transform and actual count')
-plt.gca().legend(('Actual count','Fourier transform'))
+plt.gca().legend(('Overdensity','Fourier transform'))
 plt.show()
 
 #Calculate the velocity in k space
 #v(k) = -iaHfk/k^2 theta(k)
 #delta_g = b * delta_m
+
+#Let's just do the radial parts
+#Comoving distance?
+r = np.array([])
+for i in range(len(z_red)):
+    C = Comoving(0, z_red[i])
+    r = np.append(r,C[0])
+
+k_r = np.fft.fft(r)
+print(k_r)
+#mod_k_r = np.linalg.norm(k_r)
+
+a = 1
+f = 1
+
+#MAIN EVENT: CALCULATE THE VELOCITY IN K SPACE
+v_r_k = np.array([])
+for K in range(len(r)):
+    v = -(a*H_0*f)*(k_r[K]/(k_r[K])**2) * H_fft[K]
+    v_Im = np.imag(v)
+    v_r_k = np.append(v_r_k, v_Im)
+print('Radial Fourier vel',v_r_k)
+#Transform velocity to real space
+v_r_R = np.real(np.fft.fft(v_r_k))
+print(v_r_R)
+
+
+
+"""
 k_x = np.fft.fft(x_c)
 k_y = np.fft.fft(y_c)
 k_z = np.fft.fft(z_c)
@@ -307,8 +388,14 @@ v_hist_R, bin_edges_R = np.histogramdd(v_R)
 
 fig = plt.figure()
 ax1 = fig.add_subplot(111, projection = '3d')
+
+ax1.set_xlabel('X Velocity')
+ax1.set_ylabel('Y Velocity')
+ax1.set_zlabel('Z Velocity')
+
 ax1.plot(v_x_R, v_y_R, v_z_R, 'k.', alpha = 0.1)
 ax1.plot(vx,vy,vz, 'r.', alpha = 0.1)
+"""
 '''
 print('HOLLA',bin_edges_R[0][:-1])
 X, Y = np.meshgrid(bin_edges_R[0][:-1], bin_edges_R[1][:-1])
@@ -321,11 +408,19 @@ ax1.set_xlim(min(v_x_R), max(v_x_R))
 ax1.set_ylim(min(v_y_R), max(v_y_R))
 ax1.set_zlim(min(v_z_R), max(v_z_R))
 '''
-ax1.set_xlabel('X Velocity')
-ax1.set_ylabel('Y Velocity')
-ax1.set_zlabel('Z Velocity')
+plt.scatter(z_red, vr, alpha = 0.3)
+plt.scatter(z_red, v_r_R, alpha = 0.3)
 
 plt.show()
 
 
+#Difference
+difference = np.array([])
+for R,D in zip(vr, v_r_R):
+    d = R-D
+    difference = np.append(difference, d)
 
+plt.plot(z_red, difference)
+plt.xlabel('Redshift')
+plt.ylabel('Difference in peculiar velocity (real-Calculated)')
+plt.show()
