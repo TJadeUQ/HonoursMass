@@ -49,7 +49,7 @@ L_l0 = 1
 #Want to split up df by the bins into arrays
 
 #Create array?
-data_array = np.array([z_red,Mass_gal])
+data_array = np.array([x_c,Mass_gal])
 """
 data_dict = {}
 for i,j in zip(z_red, Mass_gal):
@@ -83,7 +83,7 @@ def Comoving(z_0,z_1):
 def Vol(z_1,z_2):
     V = np.pi/3 *(z_2-z_1) *((z_2*np.tan(3*np.pi/180))**2 + z_1*np.tan(3*np.pi/180)*z_2*np.tan(3*np.pi/180) + (z_1*np.tan(3*np.pi/180))**2)
     return(V)
-
+"""
 def Same_Vol(z_1, z_3):
     z_2 = ((z_1**3 + z_3**3)/2)**(1/3)
     #Volume for reshift frustrum
@@ -143,22 +143,22 @@ Bins = np.reshape(Bins, (1,-1))
 Bins = np.unique(Bins)
 
 print('RED BINS',Bins)
-
+"""
 #Plot with new bins
-red_bins, bin_edges = np.histogram(z_red, bins = Bins)
-
-plt.hist(z_red, bins = Bins)
+red_bins, Bins = np.histogram(x_c, bins = 21)
+"""
+plt.hist(x_c, bins = Bins)
 plt.xlabel('Redshift bins for constant volume')
 plt.ylabel('Galaxy Count')
 plt.show()
-
+"""
 #########################################
 #Density of each bin
 #########################################
 
 #Need to find the mass in each bin
 data_dict = {}
-for i,z in zip(Mass_gal,z_red):
+for i,z in zip(Mass_gal,x_c):
     data_dict[z] = [i]        
 
 
@@ -171,26 +171,25 @@ def Mass_array(z_1, z_2, dictionary):
             d = np.append(d, L)
     return(d)
 
+M = np.array([])
+for i in range(len(Bins)-1):
+    d = sum(Mass_array(Bins[i], Bins[i+1], data_dict))
+    print(d)
+    M = np.append(M, d)
 
-d1 = sum(Mass_array(Bins[0], Bins[1], data_dict))
-d2 = sum(Mass_array(Bins[1], Bins[2], data_dict))
-d3 = sum(Mass_array(Bins[2], Bins[3], data_dict))
-d4 = sum(Mass_array(Bins[3], Bins[4], data_dict))
-d5 = sum(Mass_array(Bins[4], Bins[5], data_dict))
-d6 = sum(Mass_array(Bins[5], Bins[6], data_dict))
-d7 = sum(Mass_array(Bins[6], Bins[7], data_dict))
-d8 = sum(Mass_array(Bins[7], Bins[8], data_dict))
-
-M = np.array([d1,d2,d3,d4,d5,d6,d7,d8])
 
 #Density
 
 Volume = np.array([])
-
+"""
 for i in range(len(Bins)-1):
     V = Vol(Bins[i], Bins[i+1])
     Volume = np.append(Volume, V)
-    
+"""
+for i in range(len(Bins)-1):
+    V = Bins[i+1] - Bins[i]
+    print(V)
+    Volume = np.append(Volume, V)
 
 rho = np.array([])
 for L, A in zip(Volume, M):
@@ -199,17 +198,25 @@ for L, A in zip(Volume, M):
 print('RHO', rho)
 
 #Overdensity
-Total_Mass = sum(Mass_array(Bins[0], Bins[8], data_dict))
-Total_Vol = Vol(Bins[0], Bins[8])
+Total_Mass = sum(Mass_array(Bins[0], Bins[len(Bins)-1], data_dict))
+print(Total_Mass)
+#Total_Vol = Vol(Bins[0], Bins[8])
+Total_Vol = Bins[len(Bins)-1]-Bins[0]
 Total_Den = Total_Mass/Total_Vol
 print('Tota',Total_Den)
 
 Over_Den = np.array([])
 for i in range(len(rho)):
-    O = rho[i] - Total_Den
+    O = (rho[i] - Total_Den)/(Total_Den)
+
     Over_Den = np.append(Over_Den, O)
 print('OVER',Over_Den)
 
+
+
+
+plt.hist(Over_Den, bins = 11)
+plt.show()
 #########################################
 #FFT!
 #########################################
@@ -236,58 +243,24 @@ x = data_array[0,:]
 
 s= (variance(x, np.mean(x), len(x)))**(1/2)
 print('Variance', s)
-
+print(Bins)
 
 F = np.array([])
 G = np.array([])
-for i in x:
-    if Bins[0]<i<Bins[1]:
-        value = Over_Den[0]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[0], bin_edges[1]]))
-        G = np.append(G, Ga)
-    elif Bins[1]<i<Bins[2]:
-        value = Over_Den[1]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[1], bin_edges[2]]))
-        G = np.append(G, Ga)
-    elif Bins[2]<i<Bins[3]:
-        value = Over_Den[2]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[2], bin_edges[3]]))
-        G = np.append(G, Ga)
-    elif Bins[3]<i<Bins[4]:
-        value = Over_Den[3]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[3], bin_edges[4]]))
-        G = np.append(G, Ga)
-    elif Bins[4]<i<Bins[5]:
-        value = Over_Den[4]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[4], bin_edges[5]]))
-        G = np.append(G, Ga)
-    elif Bins[5]<i<Bins[6]:
-        value = Over_Den[5]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[5], bin_edges[6]]))
-        G = np.append(G, Ga)
-    elif Bins[6]<i<Bins[7]:
-        value = Over_Den[6]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[6], bin_edges[7]]))
-        G = np.append(G, Ga)
-    elif Bins[7]<i<Bins[8]:
-        value = Over_Den[7]
-        F = np.append(F, value)
-        Ga = Gaussian(i, s, np.mean([bin_edges[7], bin_edges[8]]))
-        G = np.append(G, Ga)
+for i in range(len(x_c)):
 
-    else:
-        value = 0
-        F = np.append(F, value)
-        G = np.append(G, value)
+    for j in range(len(Bins)-1):
+     
+        if Bins[j] <= x_c[i] <= Bins[j+1]:
+            value = Over_Den[j]
+            F = np.append(F, value)
+            Ga = Gaussian(x_c[i], s, np.mean([Bins[j], Bins[j+1]]))
+            G = np.append(G, Ga)
 
-
+           
+        else:
+            pass
+            
 
 H = np.array([])
 for i,j in zip(G,F):
@@ -296,19 +269,20 @@ for i,j in zip(G,F):
 
 
 #Fourier transform of Gaussian and overdensity - produce delta_m
-H_fft = np.fft.fft(H)
+F_fft = np.fft.fft(F)
+G_fft = np.fft.fft(G)
 
+H_fft = F_fft * G_fft
 
-#Fourier and real
-#plt.plot(x,H_fft)
 plt.plot(x,F)
 plt.plot(x,H)
-#plt.plot(x,H_ifft)
-plt.xlabel('Redshift')
-#plt.ylabel('Fourier transform and actual count')
+
+plt.xlabel('x coordinate')
+plt.ylabel('Overdensity')
 plt.gca().legend(('Overdensity','Fourier transform'))
 plt.show()
 
+"""
 #Calculate the velocity in k space
 #v(k) = -iaHfk/k^2 theta(k)
 #delta_g = b * delta_m
@@ -340,7 +314,6 @@ print(v_r_R)
 
 
 
-"""
 k_x = np.fft.fft(x_c)
 k_y = np.fft.fft(y_c)
 k_z = np.fft.fft(z_c)
@@ -395,8 +368,8 @@ ax1.set_zlabel('Z Velocity')
 
 ax1.plot(v_x_R, v_y_R, v_z_R, 'k.', alpha = 0.1)
 ax1.plot(vx,vy,vz, 'r.', alpha = 0.1)
-"""
-'''
+
+
 print('HOLLA',bin_edges_R[0][:-1])
 X, Y = np.meshgrid(bin_edges_R[0][:-1], bin_edges_R[1][:-1])
 
@@ -424,3 +397,5 @@ plt.plot(z_red, difference)
 plt.xlabel('Redshift')
 plt.ylabel('Difference in peculiar velocity (real-Calculated)')
 plt.show()
+
+"""
