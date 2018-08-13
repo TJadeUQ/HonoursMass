@@ -31,21 +31,20 @@ L_k0 = 0.044
 L_l0 = 1
 a = 1
 f = 1
-n_bins = 4
+n_bins = 3
 #Create data array
 
 data_array = np.array([[x_c], [y_c], [z_c]]).T
-print(data_array)
+
 data_array_M = np.array([x_c,y_c,z_c, Mass_gal]).T
 
 data_array_1 = np.array([x_c, y_c, z_c]).T
 #Create 3D histogram
 hist, edges = np.histogramdd(data_array_1, bins = (n_bins,n_bins,n_bins))
-print(hist)
-print(edges)
 edges = np.array(edges)
-print(len(edges), edges.shape[1])
 print(edges)
+
+
 #Use these edges to define data_array_M structure
 
 #Create density field
@@ -61,14 +60,10 @@ def Mass_array(x_bin_1, x_bin_2, y_bin_1, y_bin_2, z_bin_1, z_bin_2, data):
 Mass = np.array([])
 for K in range(len(edges[1])-1):
     for J in range(len(edges[1])-1):
-        for I in range(len(edges[1])-1):
-            print(edges[0,K], edges[0,K+1], edges[1,J], edges[1,J+1], edges[2, I], edges[2,I+1])
-            
+        for I in range(len(edges[1])-1):           
             F = Mass_array(edges[0,K], edges[0,K+1], edges[1,J], edges[1,J+1], edges[2, I], edges[2,I+1], data_array_M)
-            print('Sum',F)
             Mass = np.append(Mass, sum(F))
 
-print('FINAL',Mass)
 
 #Mass = Mass_gal
 #Size of bins
@@ -83,14 +78,13 @@ def Size(bins):
                 
         
 Cubes = Size(edges)
-print(Cubes)
 
 Density = np.array([])
 #Density of bins
 for Cube_Vol, Matter in zip(Cubes, Mass):
     Den = Matter/Cube_Vol
     Density = np.append(Density, Den)
-print(Density)
+
 
 #Overdenisity
 #Total density
@@ -102,101 +96,96 @@ Over_Den = np.array([])
 for den in Density:
     rho = (den - D_Tot) / D_Tot
     Over_Den = np.append(Over_Den, rho)
-print(Over_Den)
+
 
 Over_Den = np.reshape(Over_Den, [(len(edges[1])-1),(len(edges[1])-1),(len(edges[1])-1)])
-print('OVER',Over_Den)
 
 
-# Smooth gridded distribution
-def dosmooth(scale,datgrid,lx,ly,lz):
-  #print('\nSmoothing grid with scale =',scale,'...')
+
+# Smooth gridded distribution - Chris Blake code
+def dosmooth(scale,datgrid,lx,ly,lz,b):
+
   nx,ny,nz = datgrid.shape[0],datgrid.shape[1],datgrid.shape[2]
   norm = np.sum(datgrid)
+
   x = lx*np.fft.fftfreq(nx)
   y = ly*np.fft.fftfreq(ny)
   z = lz*np.fft.fftfreq(nz)
-  rsqgrid = x[:,np.newaxis,np.newaxis]**2 + y[np.newaxis,:,np.newaxis]**2 + z[np.newaxis,np.newaxis,:]**2
+
+
+  rsqgrid = x[:,np.newaxis,np.newaxis]**2 + y[np.newaxis,:,np.newaxis]**2 + z[np.newaxis,np.newaxis,:]**2 #Transform into radial coordinates
   kerngrid = np.exp(-rsqgrid/(2.*(scale**2))) #Gaussian smoothing kernel
-  datspec = np.fft.rfftn(datgrid)
-  kernspec = np.fft.rfftn(kerngrid) #Fourier transform of smoothed kernel
-  multiply = datspec*kernspec
-  datgrid = np.fft.irfftn(multiply)
+  
+  datspec = np.fft.fftn(datgrid)
+  kernspec = np.fft.fftn(kerngrid) #Fourier transform of smoothed kernel
+  
+  mass_k = datspec*kernspec
+  mass_k = b * mass_k
+
+  datgrid = np.fft.ifftn(mass_k)
   datgrid *= norm/np.sum(datgrid)
-  return datgrid, x, y, z
+  print('DAT',datgrid, datgrid.shape)
+  
+  kx = 2.*np.pi*np.fft.fftfreq(nx,d=lx/nx)
+  ky = 2.*np.pi*np.fft.fftfreq(ny,d=ly/ny)
+  kz = 2.*np.pi*np.fft.fftfreq(nz,d=lz/nz)#[:nz/2+1]
 
 
-#Smoothed 3D density field  
-Smooth, k_space_x, k_space_y, k_space_z = dosmooth(1, Over_Den, n_bins, n_bins, n_bins)
-print('K-Space',k_space_x)
-print('Smooth', Smooth, Smooth.shape)
+  ktot = np.sqrt(kx[:,np.newaxis,np.newaxis]**2 + ky[np.newaxis,:,np.newaxis]**2 + kz[np.newaxis,np.newaxis,:]**2)
+
+  v_ktot = - H_0 * ktot/ (la.norm(ktot)**2) * mass_k
+
+  v_rtot = np.fft.ifft(v_ktot)
+  #print(v_rtot, v_rtot.shape)
+  return v_rtot, datgrid
+
+velreal, smooth_r = dosmooth(1, Over_Den, edges[0,1]-edges[0,0], edges[1,1]-edges[1,0], edges[2,1]-edges[2,0], 1)
 
 
-#Velocity field
+#Radial theory
+Real_Vel = velreal.real
+Im_Vel = velreal.imag
 
 
-def Vel_General(OverDen_Gen, k_space, k_mag, a, f, H):
-    v_k = lambda k: - complex(0,1) * a * f * H * k / k_mag**2 * OverDen_Gen #Equation 5
-    v_real = np.fft.ifftn(v_k(k_space)) #Fourier transform velocity into real space
-    return v_real
+Amp = np.sqrt(Real_Vel**2 + Im_Vel**2)
+theta = np.arctan(Im_Vel/Real_Vel)
 
-#Break down into components 
+x_coord = Amp * np.sin(theta) * np.cos(theta)
+y_coord = Amp * np.sin(theta) * np.sin(theta)
+z_coord = Amp * np.cos(theta)
 
-#Calculate the magnitude of wavevector
-k_mag_x = la.norm(k_space_x)
-k_mag_y = la.norm(k_space_y)
-k_mag_z = la.norm(k_space_z)
+coord_vel = np.array([x_coord, y_coord, z_coord])
 
-#Calculate each component       
-vel_x = Vel_General(Smooth,k_space_x, k_mag_x, 1, 1, 70)
-vel_y = Vel_General(Smooth, k_space_y, k_mag_y, 1, 1, 70)
-vel_z = Vel_General(Smooth, k_space_z, k_mag_z, 1, 1, 70)
-print('Vel',vel_x, vel_y, vel_z)
-
-#Plot the actual and calculated velocities
-fig = plt.figure()
-ax = plt.axes(projection = '3d')
-
-ax.scatter(vx, vy, vz, alpha = 0.3)
-ax.set_xlabel('X-velocity (Mpc/s?)')
-ax.set_ylabel('Y-velocity (Mpc/s?)')
-ax.set_zlabel('Z-velocity (Mpc/s?)')
-
-plt.show()
-
-ax.scatter(vel_x, vel_y, vel_z, alpha = 0.3)
-ax.set_xlabel('X-velocity (Mpc/s?)')
-ax.set_ylabel('Y-velocity (Mpc/s?)')
-ax.set_zlabel('Z-velocity (Mpc/s?)')
-plt.show()
-
-"""
 #Mid point of bins
-mid = np.array([])
+midx = np.array([])
+midy = np.array([])
+midz = np.array([])
+for I in range(n_bins):
+    mx = (edges[0,I+1]+edges[0,I])/2
+    midx = np.append(midx, mx)
+for J in range(n_bins):
+    my = (edges[1,J+1]+edges[1,J])/2
+    midy = np.append(midy, my)
+for K in range(n_bins):
+    mz = (edges[2,K+1]+edges[2,K])/2
+    midz = np.append(midz, mz)
+            
 
-for K in range(len(edges[1])-1):
-    for J in range(len(edges[1])-1):
-        for I in range(len(edges[1])-1):
-            print(edges[0,K], edges[0,K+1], edges[1,J], edges[1,J+1], edges[2, I], edges[2,I+1])
-            mx = (edges[0,I+1]+edges[0,I])/2
-            my = (edges[1,J+1]+edges[1,J])/2
-            mz = (edges[2,K+1]+edges[2,K])/2
-            mid = np.append(mid, np.array([mx,my,mz]))
-            print('Midpoint',mid)
+#Plot the density field and velocity field
+fig = plt.figure()
+ax = fig.add_subplot(111, projection = '3d')
 
-mid = mid.reshape(n_bins**(3), 3)
-print(mid, mid.shape)
-
-print(mid[:,1])
-
-scatter = ax.scatter(mid[:,0], mid[:,1], mid[:,2], c = Smooth_Colour, cmap = 'viridis_r', alpha = 0.3);
-ax.set_xlabel('X-coordinates (Mpc)')
-ax.set_ylabel('Y-coordinates (Mpc)')
-ax.set_zlabel('Z-coordinates (Mpc)')
-ax.set_xlim(0,max(x_c))
-ax.set_ylim(0,max(y_c))
-ax.set_zlim(0,max(z_c))
-
-fig.colorbar(scatter)
+ax.quiver(midx, midy, midz, x_coord, y_coord, z_coord, length = 1)
+plt.show()
+"""
+X,Y = np.meshgrid(edges[0][:-1],edges[1][:-1])
+#Still casting the imaginary component of the density field?
+for ct in [0,1,2]:
+    cs = ax.contourf(X,Y,smooth_r[ct], zdir = 'z', offset = edges[2][ct],
+                      cmap = plt.cm.RdYlBu_r, alpha = 0.5)
+plt.colorbar(cs)
+ax.set_xlim(0,max(midx))
+ax.set_ylim(0,max(midy))
+ax.set_zlim(0,max(midz))
 plt.show()
 """
