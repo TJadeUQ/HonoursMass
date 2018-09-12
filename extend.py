@@ -30,7 +30,7 @@ L_k0 = 0.044
 L_l0 = 1
 a = 1
 f = 1
-n_bins = 8
+n_bins = 4
 #Create data array
 def pad_with(vector, pad_width, iaxis, kwargs):
     pad_value = kwargs.get('padder', 0.0e0)
@@ -55,8 +55,8 @@ edges_z = np.pad(edges[2], (int(n_bins/2),int(n_bins/2)), 'reflect', reflect_typ
 edges = np.array([edges_x,edges_y,edges_z])
 
 mass = np.pad(delta_g, int(n_bins/2), pad_with)
-
-print(edges[0,2*n_bins]- edges[0,0])
+print("DEBUG")
+print(edges[0,1]- edges[0,0])
 
 # Smooth gridded distribution - Chris Blake code
 def dosmooth(scale,datgrid,lx,ly,lz,b):
@@ -64,20 +64,23 @@ def dosmooth(scale,datgrid,lx,ly,lz,b):
   nx,ny,nz = datgrid.shape[0],datgrid.shape[1],datgrid.shape[2]
   norm = np.sum(datgrid)
   
-  x = lx*np.fft.fftfreq(nx)
-  y = ly*np.fft.fftfreq(ny)
-  z = lz*np.fft.fftfreq(nz)
+  x = lx*np.fft.fftfreq(nx, d = lx/nx)
+  y = ly*np.fft.fftfreq(ny, d = ly/ny)
+  z = lz*np.fft.fftfreq(nz, d = lz/nz)
+
+  d = lx/nx
+  
 
   rsqgrid = x[:,np.newaxis,np.newaxis]**2 + y[np.newaxis,:,np.newaxis]**2 + z[np.newaxis,np.newaxis,:]**2 #Transform into radial coordinates
   kerngrid = np.exp(-rsqgrid/(2.*(scale**2))) #Gaussian smoothing kernel
 
+  
   datspec = np.fft.fftn(datgrid)
-
   kernspec = np.fft.fftn(kerngrid)#Fourier transform of smoothed kernel
   mass_k = datspec*kernspec
   
   datgrid = b * np.fft.ifftn(mass_k)
-  #datgrid = datgrid * norm/np.sum(datgrid)
+  datgrid = datgrid * norm/np.sum(datgrid)
 
   kx = 2.*np.pi*np.fft.fftfreq(nx,d=lx/nx)
   ky = 2.*np.pi*np.fft.fftfreq(ny,d=ly/ny)
@@ -108,9 +111,11 @@ def dosmooth(scale,datgrid,lx,ly,lz,b):
   vy = np.fft.ifftn(vy_k)
   vz = np.fft.ifftn(vz_k)
 
-  return vx, vy, vz, datgrid
+  return vx, vy, vz, datgrid, kerngrid
 
-vx, vy, vz, smooth_r = dosmooth(5.0, mass, edges[0,2*n_bins]-edges[0,0], edges[1,2*n_bins]-edges[1,0], edges[2,2*n_bins]-edges[2,0], 1.0)
+vx, vy, vz, smooth_r, smooth_kern = dosmooth(1.0, mass, edges[0,2*n_bins]-edges[0,0], edges[1,2*n_bins]-edges[1,0], edges[2,2*n_bins]-edges[2,0], 1.0)
+print(smooth_kern.shape)
+
 
 #Mid point of bins
 midx = np.zeros(2*n_bins)
@@ -122,7 +127,12 @@ for J in range(2*n_bins):
     midy[J] = (edges[1,J+1]+edges[1,J])/2
 for K in range(2*n_bins):
     midz[K] = (edges[2,K+1]+edges[2,K])/2
-
+    
+plt.plot(midx, smooth_kern[:,0,0], 'b')
+plt.plot(midy, smooth_kern[0,:,0], 'k')
+plt.plot(midz, smooth_kern[0,0,:], 'r')
+plt.show()
+#exit()
 x, y, z = np.meshgrid(midx, midy, midz)
 #Plot the density field and velocity field
 fig = plt.figure()
